@@ -1,0 +1,22 @@
+{
+  "name": "html-transform",
+  "version": "1.0.0",
+  "description": "Transforms given HTML files at DOM level",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sergey Chikuyonok <serge.che@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "domhandler": "^2.3.0",
+    "domutils": "^1.5.1",
+    "htmlparser2": "^3.8.2",
+    "through2": "^0.6.3",
+    "xtend": "^4.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.1",
+    "vinyl-fs": "^1.0.0",
+  }
+}

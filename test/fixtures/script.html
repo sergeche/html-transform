@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Script transform test</title>
+</head>
+<body>
+	<script>var str = '<a href="/about/"></a>';</script>
+	<script type="text/javascript">var str = '<a href="/about/"></a>';</script>
+	<script type="text/x-template"><a href="/a/b/c/about/"></a></script>
+</body>
+</html>
