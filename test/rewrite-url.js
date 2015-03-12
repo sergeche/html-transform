@@ -30,7 +30,7 @@ describe('URL rewriter', function() {
 	it('add custom tag to rewrite map', function(done) {
 		run('./html/urls.html', {
 			prefix: '/a/b/c',
-			rewriteMap: {
+			rewriteMapAddon: {
 				foo: ['href']
 			}
 		}, function() {

@@ -34,7 +34,7 @@ var defaultConfig = {
 		if (node.attribs && node.attribs['data-href'] === 'preserve') {
 			return false;
 		}
-		
+
 		return !(/^[a-z]+:/i.test(url) || /^\/\//.test(url));
 	},
 
@@ -64,7 +64,13 @@ var defaultConfig = {
 		embed: ['src'],
 		form: ['action'],
 		object: ['data']
-	}
+	},
+
+	/**
+	 * The `rewriteMapAddon` (object), if given, will be merged
+	 * with `rewriteMap`. 
+	 */
+	rewriteMapAddon: null
 };
 
 
@@ -74,8 +80,8 @@ function createConfig(config) {
 	}
 
 	var out = extend({}, defaultConfig, config);
-	if (config && config.rewriteMap) {
-		out.rewriteMap = extend({}, defaultConfig.rewriteMap, config.rewriteMap);
+	if (config && config.rewriteMapAddon) {
+		out.rewriteMap = extend({}, defaultConfig.rewriteMap, config.rewriteMapAddon);
 	}
 
 	return out;
