@@ -6,11 +6,21 @@
  * Полученный адрес может быть переработан методом `transform`. 
  */
 var path = require('path');
+var fs = require('graceful-fs');
 var extend = require('xtend');
 var through = require('through2');
+var crc = require('crc');
 var ensureDom = require('../lib/ensure-dom');
 
+var fileStatCache = {};
+
 var defaultConfig = {
+	/**
+	 * How much time (milliseconds) a static asset
+	 * stats should be cached
+	 */
+	statCacheTime: 5000,
+
 	/** 
 	 * Prefix to add to rewritten url
 	 */
@@ -22,7 +32,10 @@ var defaultConfig = {
 	 * @return {Array} Array of attributes to be rewrutted on given node
 	 */
 	match: function(node) {
-		return node && node.name && this.rewriteMap[node.name];
+		if (node && node.name) {
+			var attrs = [].concat(this.rewriteMap[node.name] || [], this.staticMap[node.name] || []);
+			return attrs.length ? attrs : null;
+		}
 	},
 
 	/**
@@ -54,15 +67,23 @@ var defaultConfig = {
 	 * Map of elements and their attributes to be rewritten
 	 */
 	rewriteMap: {
+		a: ['href'],
+		iframe: ['src'],
+		form: ['action']
+	},
+
+	/**
+	 * Map of elements and their attributes that point to a static
+	 * resource. URLs from this map can be treated differently:
+	 * for example, it is possible to add cache-busting tokens
+	 */
+	staticMap: {
 		script: ['src'],
 		link: ['href'],
-		a: ['href'],
 		video: ['src'],
 		audio: ['src'],
-		iframe: ['src'],
 		source: ['src'],
 		embed: ['src'],
-		form: ['action'],
 		object: ['data']
 	},
 
@@ -99,8 +120,6 @@ function absoluteUrl(url, parentUrl, root) {
 		return url;
 	}
 
-	// console.log('Build abs url', url, parentUrl, root);
-
 	var out = path.normalize(path.join(path.dirname(parentUrl), url));
 	// console.log('out', out);
 	if (out.substr(0, root.length) === root) {
@@ -117,8 +136,8 @@ function absoluteUrl(url, parentUrl, root) {
 /**
  * Переделывает указанный URL: добавляет к нему `prefix` и следит 
  * за «чистотой» адреса 
- * @param  {String} url    Абсолютный URL, который нужно переделать
- * @param  {String} prefix Префикс, который нужно добавить к адресу
+ * @param  {String} url
+ * @param  {String} prefix
  * @return {String}
  */
 function rebuildUrl(url, prefix) {
@@ -152,6 +171,57 @@ function findNodesToRewrite(nodes, config, out) {
 	return out;
 }
 
+/**
+ * Check if given attribute in DOM node refers to static
+ * page asset (e.g. CSS, JS)
+ * @param  {Object} node
+ * @param  {String} attribute
+ * @param  {Objec}  config
+ * @return {Boolean}
+ */
+function isStatic(node, attribute, config) {
+	var staticAttrs = config.staticMap[node.name];
+	return staticAttrs && ~staticAttrs.indexOf(attribute);
+}
+
+function getFileStats(url, parentFile, config) {
+	var file = path.join(parentFile.base, url);
+	if (!fileStatCache[file] || fileStatCache[file].created < Date.now() + config.statCacheTime) {
+		var stats = null;
+
+		try {
+			var s = fs.statSync(file);
+			if (s.isFile()) {
+				stats = {
+					modified: s.mtime,
+					created: s.birthtime,
+					size: s.size,
+					inode: s.ino
+				};
+
+				Object.defineProperty(stats, 'hash', {
+					enumerable: true, 
+					get: function() {
+						if (!this._hash) {
+							this._hash = crc.crc32(fs.readFileSync(file))
+						}
+
+						return this._hash;
+					}
+				});
+			}
+		} catch (e) {
+			console.warn(e.message);
+		}
+
+		fileStatCache[file] = {
+			stats: stats,
+			created: Date.now()
+		};
+	}
+	return fileStatCache[file].stats;
+}
+
 module.exports = function(config) {
 	config = createConfig(config);
 	return through.obj(function(file, enc, next) {
@@ -159,19 +229,20 @@ module.exports = function(config) {
 		ensureDom(file, function(dom) {
 			findNodesToRewrite(dom, config).forEach(function(item) {
 				var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
-				// console.log('ABS', absUrl);
 				var targetUrl = rebuildUrl(absUrl, config.prefix);
-				// console.log('TARGET', targetUrl);
+				var _static = isStatic(item.node, item.attribute, config);
+
 				if (config.transform) {
+
 					targetUrl = config.transform(targetUrl, file, {
 						clean: absUrl,
 						config: config,
 						node: item,
+						isStatic: _static,
+						stats: _static ? getFileStats(absUrl, file, config) : null,
 						attribute: item.attribute
 					});
 				}
-
-				// console.log('TARGET2', targetUrl);
 
 				item.node.attribs[item.attribute] = targetUrl;
 			});

@@ -64,4 +64,16 @@ describe('URL rewriter', function() {
 			done();
 		});
 	});
+
+	it('rewrite static assets', function(done) {
+		run('./html/urls.html', {
+			prefix: '/a/b/c',
+			transform: function(url, file, ctx) {
+				return ctx.stats ? '/-/' + ctx.stats.hash + url : url;
+			}
+		}, function() {
+			assert.equal(read('out/html/urls.html'), read('fixtures/assets.html'));
+			done();
+		});
+	});
 });
