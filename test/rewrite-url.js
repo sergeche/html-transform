@@ -3,87 +3,65 @@ var path = require('path');
 var assert = require('assert');
 var vfs = require('vinyl-fs');
 var rewrite = require('../processor/rewrite-url');
+var transform = require('../');
 
 function read(p) {
 	return fs.readFileSync(path.join(__dirname, p), {encoding: 'utf8'});
 }
 
 describe('URL rewriter', function() {
-	it('transform URLs', function(done) {
-		vfs.src('./html/urls.html', {cwd: __dirname, base: __dirname})
-			.pipe(rewrite({prefix: '/a/b/c'}))
+	var stringify = transform.stringifyDom('xhtml');
+	var save = vfs.dest(path.join(__dirname, 'out'));
+	var run = function(file, rewriteOpt, callback) {
+		return vfs.src(file, {cwd: __dirname, base: __dirname})
+			.pipe(rewrite(rewriteOpt))
+			.pipe(transform.stringifyDom('xhtml'))
 			.pipe(vfs.dest(path.join(__dirname, 'out')))
-			.on('end', function() {
-				console.log('===Actual===');
-				console.log(read('out/html/urls.html'));
+			.on('end', callback);
+	};
 
-				console.log('===Expected===');
-				console.log(read('fixtures/urls.html'));
-
-				assert.equal(read('out/html/urls.html'), read('fixtures/urls.html'));
-				done();
-			});
+	it('transform URLs', function(done) {
+		run('./html/urls.html', {prefix: '/a/b/c'}, function() {
+			assert.equal(read('out/html/urls.html'), read('fixtures/urls1.html'));
+			done();
+		});
 	});
 
-	// it('add custom tag to rewrite map', function() {
-	// 	var doc = dom.parse(res.content);
-	// 	var proc = rewrite({
-	// 		cwd: __dirname,
-	// 		prefix: '/a/b/c',
-	// 		rewriteMap: {
-	// 			foo: ['href']
-	// 		}
-	// 	});
+	it('add custom tag to rewrite map', function(done) {
+		run('./html/urls.html', {
+			prefix: '/a/b/c',
+			rewriteMap: {
+				foo: ['href']
+			}
+		}, function() {
+			assert.equal(read('out/html/urls.html'), read('fixtures/urls2.html'));
+			done();
+		});
+	});
 
-	// 	proc(doc, res);
-	// 	assert.equal(dom.stringify(doc), fixtures.urls2);
-	// });
+	it('custom URL transformer', function(done) {
+		run('./html/urls.html', {
+			prefix: '/a/b/c',
+			transform: function(url) {
+				return '/-' + url;
+			}
+		}, function() {
+			assert.equal(read('out/html/urls.html'), read('fixtures/urls3.html'));
+			done();
+		});
+	});
 
-	// it('custom URL transformer', function() {
-	// 	var doc = dom.parse(res.content);
-	// 	var proc = rewrite({
-	// 		cwd: __dirname,
-	// 		prefix: '/a/b/c',
-	// 		transform: function(url, info) {
-	// 			return '/-' + url;
-	// 		}
-	// 	});
+	it('preserve hrefs', function(done) {
+		run('./html/urls-preserve.html', {prefix: '/a/b/c'}, function() {
+			assert.equal(read('out/html/urls-preserve.html'), read('fixtures/urls-preserve.html'));
+			done();
+		});
+	});
 
-	// 	proc(doc, res);
-	// 	assert.equal(dom.stringify(doc), fixtures.urls3);
-	// });
-
-	// it('preserve hrefs', function() {
-	// 	var res =  new Resource({
-	// 		cwd: __dirname,
-	// 		file: 'html/urls-preserve.html',
-	// 		prefix: '/a/b/c'
-	// 	});
-
-	// 	var doc = dom.parse(res.content);
-	// 	var proc = rewrite({
-	// 		cwd: __dirname,
-	// 		prefix: '/a/b/c'
-	// 	});
-
-	// 	proc(doc, res);
-	// 	assert.equal(dom.stringify(doc), fixtures.urlsPreserve);
-	// });
-
-	// it('rewrite in scripts', function() {
-	// 	var res =  new Resource({
-	// 		cwd: __dirname,
-	// 		file: 'html/script.html',
-	// 		prefix: '/a/b/c'
-	// 	});
-
-	// 	var doc = dom.parse(res.content);
-	// 	var proc = rewrite({
-	// 		cwd: __dirname,
-	// 		prefix: '/a/b/c'
-	// 	});
-
-	// 	proc(doc, res);
-	// 	assert.equal(dom.stringify(doc), fixtures.script);
-	// });
+	it('rewrite in scripts', function(done) {
+		run('./html/script.html', {prefix: '/a/b/c'}, function() {
+			assert.equal(read('out/html/script.html'), read('fixtures/script.html'));
+			done();
+		});
+	});
 });

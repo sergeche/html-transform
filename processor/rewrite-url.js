@@ -31,6 +31,10 @@ var defaultConfig = {
 	 * @return {Boolean}
 	 */
 	validUrl: function(url, node) {
+		if (node.attribs && node.attribs['data-href'] === 'preserve') {
+			return false;
+		}
+		
 		return !(/^[a-z]+:/i.test(url) || /^\/\//.test(url));
 	},
 
@@ -89,13 +93,13 @@ function absoluteUrl(url, parentUrl, root) {
 		return url;
 	}
 
-	console.log('Build abs url', url, parentUrl, root);
+	// console.log('Build abs url', url, parentUrl, root);
 
 	var out = path.normalize(path.join(path.dirname(parentUrl), url));
-	console.log('out', out);
+	// console.log('out', out);
 	if (out.substr(0, root.length) === root) {
 		out = out.substr(root.length);
-		console.log('trim root', root, out);
+		// console.log('trim root', root, out);
 		if (out[0] !== '/') {
 			out = '/' + out;
 		}
@@ -149,9 +153,9 @@ module.exports = function(config) {
 		ensureDom(file, function(dom) {
 			findNodesToRewrite(dom, config).forEach(function(item) {
 				var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
-				console.log('ABS', absUrl);
+				// console.log('ABS', absUrl);
 				var targetUrl = rebuildUrl(absUrl, config.prefix);
-				console.log('TARGET', targetUrl);
+				// console.log('TARGET', targetUrl);
 				if (config.transform) {
 					targetUrl = config.transform(targetUrl, file, {
 						clean: absUrl,
@@ -161,7 +165,7 @@ module.exports = function(config) {
 					});
 				}
 
-				console.log('TARGET2', targetUrl);
+				// console.log('TARGET2', targetUrl);
 
 				item.node.attribs[item.attribute] = targetUrl;
 			});
