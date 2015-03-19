@@ -78,6 +78,7 @@ var defaultConfig = {
 	 * for example, it is possible to add cache-busting tokens
 	 */
 	staticMap: {
+		img: ['src'],
 		script: ['src'],
 		link: ['href'],
 		video: ['src'],
@@ -103,6 +104,10 @@ function createConfig(config) {
 	var out = extend({}, defaultConfig, config);
 	if (config && config.rewriteMapAddon) {
 		out.rewriteMap = extend({}, defaultConfig.rewriteMap, config.rewriteMapAddon);
+	}
+	
+	if (config && config.staticMapAddon) {
+		out.staticMap = extend({}, defaultConfig.staticMap, config.staticMapAddon);
 	}
 
 	return out;
