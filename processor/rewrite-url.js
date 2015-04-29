@@ -230,31 +230,37 @@ function getFileStats(url, parentFile, config) {
 module.exports = function(config) {
 	config = createConfig(config);
 	return through.obj(function(file, enc, next) {
-		var base = path.resolve(file.cwd, file.base);
-		ensureDom(file, function(dom) {
-			findNodesToRewrite(dom, config).forEach(function(item) {
-				var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
-				var targetUrl = rebuildUrl(absUrl, config.prefix);
-				var _static = isStatic(item.node, item.attribute, config);
-
-				if (config.transform) {
-
-					targetUrl = config.transform(targetUrl, file, {
-						clean: absUrl,
-						config: config,
-						node: item,
-						isStatic: _static,
-						stats: _static ? getFileStats(absUrl, file, config) : null,
-						attribute: item.attribute
-					});
-				}
-
-				item.node.attribs[item.attribute] = targetUrl;
-			});
-		}, config, next);
+		module.exports.process(file, config, next);
 	});
 };
 
+module.exports.process = function(file, config, callback) {
+	config = config || defaultConfig;
+
+	ensureDom(file, function(dom) {
+		var base = path.resolve(file.cwd, file.base);
+		findNodesToRewrite(dom, config).forEach(function(item) {
+			var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
+			var targetUrl = rebuildUrl(absUrl, config.prefix);
+			var _static = isStatic(item.node, item.attribute, config);
+
+			if (config.transform) {
+				targetUrl = config.transform(targetUrl, file, {
+					clean: absUrl,
+					config: config,
+					node: item,
+					isStatic: _static,
+					stats: _static ? getFileStats(absUrl, file, config) : null,
+					attribute: item.attribute
+				});
+			}
+
+			item.node.attribs[item.attribute] = targetUrl;
+		});
+	}, config, callback);
+};
+
 module.exports.config = defaultConfig;
+module.exports.createConfig = createConfig;
 module.exports.absoluteUrl = absoluteUrl;
 module.exports.rebuildUrl = rebuildUrl;

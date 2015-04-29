@@ -39,3 +39,5 @@ module.exports.stringifyDom = function(options) {
 		next(null, file);
 	});
 };
+
+module.exports.dom = dom;
