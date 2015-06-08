@@ -3,7 +3,7 @@
  * на ресурсы внутри HTML/XML документа. Работает на основе конфига:
  * пути относительно `root` превращаются в абсолютные
  * и им добавляется `prefix`.
- * Полученный адрес может быть переработан методом `transform`. 
+ * Полученный адрес может быть переработан методом `transformUrl`. 
  */
 var path = require('path');
 var fs = require('graceful-fs');
@@ -59,7 +59,7 @@ var defaultConfig = {
 	 * @param  {Object} ctx Context object used for transformation
 	 * @return {String}
 	 */
-	transform: function(url, file, ctx) {
+	transformUrl: function(url, file, ctx) {
 		return url;
 	},
 
@@ -98,7 +98,7 @@ var defaultConfig = {
 
 function createConfig(config) {
 	if (typeof config === 'function') {
-		config = {transform: config};
+		config = {transformUrl: config};
 	}
 
 	var out = extend({}, defaultConfig, config);
@@ -244,8 +244,8 @@ module.exports.process = function(file, config, callback) {
 			var targetUrl = rebuildUrl(absUrl, config.prefix);
 			var _static = isStatic(item.node, item.attribute, config);
 
-			if (config.transform) {
-				targetUrl = config.transform(targetUrl, file, {
+			if (config.transformUrl) {
+				targetUrl = config.transformUrl(targetUrl, file, {
 					clean: absUrl,
 					config: config,
 					node: item,
