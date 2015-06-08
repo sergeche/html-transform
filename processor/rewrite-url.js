@@ -10,7 +10,6 @@ var fs = require('graceful-fs');
 var extend = require('xtend');
 var through = require('through2');
 var crc = require('crc');
-var ensureDom = require('../lib/ensure-dom');
 
 var fileStatCache = {};
 
@@ -229,17 +228,10 @@ function getFileStats(url, parentFile, config) {
 
 module.exports = function(config) {
 	config = createConfig(config);
+
 	return through.obj(function(file, enc, next) {
-		module.exports.process(file, config, next);
-	});
-};
-
-module.exports.process = function(file, config, callback) {
-	config = config || defaultConfig;
-
-	ensureDom(file, function(dom) {
 		var base = path.resolve(file.cwd, file.base);
-		findNodesToRewrite(dom, config).forEach(function(item) {
+		findNodesToRewrite(file.dom, config).forEach(function(item) {
 			var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
 			var targetUrl = rebuildUrl(absUrl, config.prefix);
 			var _static = isStatic(item.node, item.attribute, config);
@@ -257,7 +249,9 @@ module.exports.process = function(file, config, callback) {
 
 			item.node.attribs[item.attribute] = targetUrl;
 		});
-	}, config, callback);
+
+		next(null, file);
+	});
 };
 
 module.exports.config = defaultConfig;

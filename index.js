@@ -4,6 +4,8 @@ var through = require('through2');
 var duplexer = require('duplexer2');
 var rewriteUrl = require('./processor/rewrite-url');
 var dom = require('./lib/dom');
+var bufferPipeline = require('./lib/buffer');
+var streamPipeline = require('./lib/stream');
 
 /**
  * Returns a Transofrm stream for VinylFS file object
@@ -22,53 +24,17 @@ module.exports = function(options) {
 		});
 	}
 
-	return wrap(duplexer(input, output), options);
-};
+	var transform = duplexer(input, output);
 
-module.exports.wrap = wrap;
-
-/**
- * Wraps given stream into a DOM parser and stringifier. Returns a new stream
- * that parses incoming VinylFS file contents into DOM, stores it in file object
- * as `.dom` property and passes file to `stream`. The `stream` output is then
- * stringifies DOM object back to buffer
- * @param  {stream.Duplex} stream 
- * @param  {Object} options
- * @return {stream.Transform}
- */
-function wrap(stream, options) {
-	options = options || {};
-	var output = through.obj(function(file, enc, next) {
-		if (file.dom) {
-			file.contents = new Buffer(dom.stringify(file.dom, options));
-			delete file.dom;
-		}
-
-		next(null, file);
-	});
-
-	var input = through.obj(function(file, enc, next) {
+	return through.obj(function(file, enc, next) {
 		if (file.isNull()) {
 			return next(null, file);
 		}
 
 		if (file.isStream()) {
-			return next(new Error('Streams are not supported'));
+			return streamPipeline(file, transform, options, next);
 		}
 
-		dom.parse(file.contents.toString('utf8'), options, function(err, dom) {
-			if (err) {
-				return next(err);
-			}
-
-			file.dom = dom;
-
-			// create a transformation pipeline based on given settings
-			input.unpipe(output);
-			input.pipe(stream).pipe(output);
-			next(null, file);
-		});
+		bufferPipeline(file, transform, options, next);
 	});
-
-	return duplexer(input, output);
-}
+};
