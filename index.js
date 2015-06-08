@@ -13,23 +13,24 @@ var streamPipeline = require('./lib/stream');
  */
 module.exports = function(options) {
 	options = options || {};
-	var input = rewriteUrl(options);
-	var output = input;
-
-	// use custom transformers, if provided
-	if (options.transform) {
-		var t = Array.isArray(options.transform) ? options.transform : [options.transform];
-		t.forEach(function(stream) {
-			output = output.pipe(stream);
-		});
-	}
-
-	var transform = duplexer(input, output);
 
 	return through.obj(function(file, enc, next) {
 		if (file.isNull()) {
 			return next(null, file);
 		}
+
+		var input = rewriteUrl(options);
+		var output = input;
+
+		// use custom transformers, if provided
+		if (options.transform) {
+			var t = Array.isArray(options.transform) ? options.transform : [options.transform];
+			t.forEach(function(stream) {
+				output = output.pipe(stream);
+			});
+		}
+
+		var transform = duplexer(input, output);
 
 		if (file.isStream()) {
 			return streamPipeline(file, transform, options, next);

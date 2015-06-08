@@ -1,11 +1,12 @@
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
+var del = require('del');
 var vfs = require('vinyl-fs');
 var transform = require('../');
 
 function read(p) {
-	return fs.readFileSync(path.join(__dirname, p), {encoding: 'utf8'});
+	return fs.readFileSync(path.join(__dirname, p), 'utf8');
 }
 
 function src(pattern) {
@@ -13,10 +14,14 @@ function src(pattern) {
 };
 
 function dest(dir) {
-	return vfs.dest(path.join(__dirname, 'out'));
+	return vfs.dest(path.join(__dirname, dir));
 }
 
 describe('URL rewriter', function() {
+	before(function(done) {
+		del('./out', {cwd: __dirname}, done);
+	});
+
 	it('transform URLs', function(done) {
 		src('./html/urls.html')
 		.pipe(transform({
