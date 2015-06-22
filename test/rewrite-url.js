@@ -11,7 +11,7 @@ function read(p) {
 
 function src(pattern) {
 	return vfs.src(pattern, {cwd: __dirname, base: __dirname});
-};
+}
 
 function dest(dir) {
 	return vfs.dest(path.join(__dirname, dir));

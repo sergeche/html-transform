@@ -3,19 +3,19 @@ var path = require('path');
 var assert = require('assert');
 var del = require('del');
 var vfs = require('vinyl-fs');
+var extend = require('xtend');
 var transform = require('../');
 
 function read(p) {
 	return fs.readFileSync(path.join(__dirname, p), 'utf8');
 }
 
-function src(pattern) {
-	return vfs.src(pattern, {
+function src(pattern, options) {
+	return vfs.src(pattern, extend({
 		cwd: __dirname, 
 		base: __dirname,
-		buffer: false
-	});
-};
+	}, options || {}));
+}
 
 function dest(dir) {
 	return vfs.dest(path.join(__dirname, dir));
@@ -27,7 +27,7 @@ describe('Glob', function() {
 	});
 
 	it('stream content', function(done) {
-		src('./html/{urls,urls-preserve}.html')
+		src('./html/{urls,urls-preserve}.html', {buffer: false})
 		.pipe(transform({
 			prefix: '/a/b/c', 
 			mode: 'xhtml'

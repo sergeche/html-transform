@@ -3,7 +3,6 @@
 var through = require('through2');
 var duplexer = require('duplexer2');
 var rewriteUrl = require('./processor/rewrite-url');
-var dom = require('./lib/dom');
 var bufferPipeline = require('./lib/buffer');
 var streamPipeline = require('./lib/stream');
 

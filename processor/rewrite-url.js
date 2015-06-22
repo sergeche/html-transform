@@ -10,16 +10,9 @@ var fs = require('graceful-fs');
 var extend = require('xtend');
 var through = require('through2');
 var crc = require('crc');
-
-var fileStatCache = {};
+var fileStats = require('../lib/file-stats');
 
 var defaultConfig = {
-	/**
-	 * How much time (milliseconds) a static asset
-	 * stats should be cached
-	 */
-	statCacheTime: 5000,
-
 	/** 
 	 * Prefix to add to rewritten url
 	 */
@@ -188,44 +181,6 @@ function isStatic(node, attribute, config) {
 	return staticAttrs && ~staticAttrs.indexOf(attribute);
 }
 
-function getFileStats(url, parentFile, config) {
-	var file = path.join(parentFile.base, url);
-	if (!fileStatCache[file] || fileStatCache[file].created < Date.now() + config.statCacheTime) {
-		var stats = null;
-
-		try {
-			var s = fs.statSync(file);
-			if (s.isFile()) {
-				stats = {
-					modified: s.mtime,
-					created: s.birthtime,
-					size: s.size,
-					inode: s.ino
-				};
-
-				Object.defineProperty(stats, 'hash', {
-					enumerable: true, 
-					get: function() {
-						if (!this._hash) {
-							this._hash = crc.crc32(fs.readFileSync(file))
-						}
-
-						return this._hash;
-					}
-				});
-			}
-		} catch (e) {
-			console.warn(e.message);
-		}
-
-		fileStatCache[file] = {
-			stats: stats,
-			created: Date.now()
-		};
-	}
-	return fileStatCache[file].stats;
-}
-
 module.exports = function(config) {
 	config = createConfig(config);
 
@@ -242,7 +197,7 @@ module.exports = function(config) {
 					config: config,
 					node: item,
 					isStatic: _static,
-					stats: _static ? getFileStats(absUrl, file, config) : null,
+					stats: _static ? fileStats(absUrl, file, config) : null,
 					attribute: item.attribute
 				});
 			}
