@@ -195,6 +195,7 @@ module.exports = function(config) {
 				targetUrl = config.transformUrl(targetUrl, file, {
 					clean: absUrl,
 					config: config,
+					type: 'html',
 					node: item,
 					isStatic: _static,
 					stats: _static ? fileStats(absUrl, file, config) : null,
