@@ -50,3 +50,5 @@ module.exports.process = function(file, options, next) {
 
 	return bufferPipeline(file, transform, options, next);
 };
+
+module.exports.htmlparser = require('htmlparser2');

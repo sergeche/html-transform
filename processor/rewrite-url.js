@@ -196,7 +196,7 @@ module.exports = function(config) {
 					clean: absUrl,
 					config: config,
 					type: 'html',
-					node: item,
+					node: item.node,
 					isStatic: _static,
 					stats: _static ? fileStats(absUrl, file, config) : null,
 					attribute: item.attribute
