@@ -3,8 +3,8 @@
 var through = require('through2');
 var duplexer = require('duplexer2');
 var rewriteUrl = require('./processor/rewrite-url');
-var bufferPipeline = require('./lib/buffer');
-var streamPipeline = require('./lib/stream');
+var streamFactory = require('./lib/stream');
+var readContents = require('./lib/read-contents');
 
 /**
  * Returns a Transform stream for VinylFS file object
@@ -23,13 +23,42 @@ module.exports = function(options) {
  * @param  {VinylFS}   file
  * @param  {Function} next
  */
-module.exports.process = function(file, options, next) {
+module.exports.process = function(file, options, done) {
 	options = options || {};
 
 	if (file.isNull()) {
-		return next(null, file);
+		return done(null, file);
 	}
 
+	var transform = streamFactory(file, createPipeline(options), options)
+	.once('error', done);
+
+	if (file.isStream()) {
+		file.contents = file.contents.pipe(transform);
+		file.contents.pause();
+		done(null, file);
+	} else {
+		transform.pipe(readContents(function(contents, next) {
+			file.contents = contents;
+			next();
+			done(null, file);
+		}))
+		.once('error', done);
+		transform.end(file.contents);
+	}
+
+	return transform;
+};
+
+module.exports.htmlparser = require('htmlparser2');
+
+/**
+ * Creates file transformation pipeline: a stream that transforms passed CSS files
+ * on object modle level
+ * @param  {Object} options
+ * @return {stream.Duplex}
+ */
+function createPipeline(options) {
 	var input = rewriteUrl(options);
 	var output = input;
 
@@ -42,13 +71,5 @@ module.exports.process = function(file, options, next) {
 		});
 	}
 
-	var transform = duplexer(input, output);
-
-	if (file.isStream()) {
-		return streamPipeline(file, transform, options, next);
-	}
-
-	return bufferPipeline(file, transform, options, next);
-};
-
-module.exports.htmlparser = require('htmlparser2');
+	return duplexer(input, output);
+}

@@ -16,7 +16,7 @@
     "entities": "^1.1.1",
     "graceful-fs": "^3.0.6",
     "htmlparser2": "^3.8.2",
-    "through2": "^0.6.3",
+    "through2": "^2.0.0",
     "xtend": "^4.0.0"
   },
   "devDependencies": {
