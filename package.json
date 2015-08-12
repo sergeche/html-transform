@@ -17,6 +17,7 @@
     "graceful-fs": "^3.0.6",
     "htmlparser2": "^3.8.2",
     "through2": "^2.0.0",
+    "vinyl": "^0.5.1",
     "xtend": "^4.0.0"
   },
   "devDependencies": {
