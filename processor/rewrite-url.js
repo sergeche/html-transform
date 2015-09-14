@@ -61,7 +61,8 @@ var defaultConfig = {
 	rewriteMap: {
 		a: ['href'],
 		iframe: ['src'],
-		form: ['action']
+		form: ['action'],
+		area: ['href']
 	},
 
 	/**
