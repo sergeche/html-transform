@@ -1,6 +1,6 @@
 {
   "name": "html-transform",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Transforms given HTML files at DOM level",
   "main": "index.js",
   "scripts": {
