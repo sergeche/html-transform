@@ -152,12 +152,20 @@ function findNodesToRewrite(nodes, config, out) {
 		var attrs = config.match(node);
 		if (attrs) {
 			attrs.forEach(function(name) {
-				if (node.attribs[name] && config.validUrl(node.attribs[name], node)) {
+				if (node.attribs[name]) {
 					out.push({
 						node: node,
 						attribute: name
 					});
 				}
+			});
+		}
+
+		// always add nodes with `style` attribute
+		if (node.attribs && node.attribs.style && (!attrs || attrs.indexOf('style') === -1)) {
+			out.push({
+				node: node,
+				attribute: 'style'
 			});
 		}
 
@@ -179,7 +187,25 @@ function findNodesToRewrite(nodes, config, out) {
  */
 function isStatic(node, attribute, config) {
 	var staticAttrs = config.staticMap[node.name];
-	return staticAttrs && ~staticAttrs.indexOf(attribute);
+	return attribute === 'style' || (staticAttrs && ~staticAttrs.indexOf(attribute));
+}
+
+function extractUrls(attrName, attrValue) {
+	var urls = [];
+	if (attrName === 'style') {
+		// `style` is special attribute: it may contain resource 
+		// references as `url(...)` tokens
+		var reUrl = /\b(url\(['"]?)(.+?)['"]?\)/g, m;
+		while (m = reUrl.exec(attrValue)) {
+			urls.push({
+				url: m[2],
+				pos: m.index + m[1].length
+			});
+		}
+	} else {
+		urls.push({url: attrValue, pos: 0});
+	}
+	return urls;
 }
 
 module.exports = function(config) {
@@ -188,23 +214,41 @@ module.exports = function(config) {
 	return through.obj(function(file, enc, next) {
 		var base = path.resolve(file.cwd, file.base);
 		findNodesToRewrite(file.dom, config).forEach(function(item) {
-			var absUrl = absoluteUrl(item.node.attribs[item.attribute], file.path, base);
-			var targetUrl = rebuildUrl(absUrl, config.prefix);
-			var _static = isStatic(item.node, item.attribute, config);
+			var attrName = item.attribute;
+			var attrValue = item.node.attribs[attrName];
 
-			if (config.transformUrl) {
-				targetUrl = config.transformUrl(targetUrl, file, {
-					clean: absUrl,
-					config: config,
-					type: 'html',
-					node: item.node,
-					isStatic: _static,
-					stats: _static ? fileStats(absUrl, file, config) : null,
-					attribute: item.attribute
+			var urls = extractUrls(attrName, attrValue)
+			// keep only valid urls
+			.filter(function(obj) {
+				return config.validUrl(obj.url, item.node, attrName);
+			})
+			.reverse();
+
+			try {
+				urls.forEach(function(obj) {
+					var absUrl = absoluteUrl(obj.url, file.path, base);
+					var targetUrl = rebuildUrl(absUrl, config.prefix);
+					var _static = isStatic(item.node, attrName, config);
+
+					if (config.transformUrl) {
+						targetUrl = config.transformUrl(targetUrl, file, {
+							clean: absUrl,
+							config: config,
+							type: 'html',
+							node: item.node,
+							isStatic: _static,
+							stats: _static ? fileStats(absUrl, file, config) : null,
+							attribute: attrName
+						});
+					}
+
+					attrValue = attrValue.slice(0, obj.pos) + targetUrl + attrValue.slice(obj.pos + obj.url.length);
 				});
+			} catch (e) {
+				return next(e);
 			}
 
-			item.node.attribs[item.attribute] = targetUrl;
+			item.node.attribs[item.attribute] = attrValue;
 		});
 
 		next(null, file);

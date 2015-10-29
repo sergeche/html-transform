@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var extend = require('xtend')
 var assert = require('assert');
 var del = require('del');
 var vfs = require('vinyl-fs');
@@ -9,8 +10,8 @@ function read(p) {
 	return fs.readFileSync(path.join(__dirname, p), 'utf8');
 }
 
-function src(pattern) {
-	return vfs.src(pattern, {cwd: __dirname, base: __dirname});
+function src(pattern, options) {
+	return vfs.src(pattern, extend({cwd: __dirname, base: __dirname}, options || {}));
 }
 
 function dest(dir) {
@@ -94,7 +95,7 @@ describe('URL rewriter', function() {
 	});
 
 	it('rewrite static assets', function(done) {
-		src('./html/urls.html')
+		src('./html/urls.html', {base: path.join(__dirname, './html')})
 		.pipe(transform({
 			prefix: '/a/b/c',
 			transformUrl: function(url, file, ctx) {
@@ -102,7 +103,7 @@ describe('URL rewriter', function() {
 			},
 			mode: 'xhtml'
 		}))
-		.pipe(dest('out'))
+		.pipe(dest('out/html'))
 		.on('end', function() {
 			assert.equal(read('out/html/urls.html'), read('fixtures/assets.html'));
 			done();
