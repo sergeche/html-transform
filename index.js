@@ -1,7 +1,7 @@
 'use strict';
 
 var through = require('through2');
-var duplexer = require('duplexer2');
+var combine = require('stream-combiner2');
 var rewriteUrl = require('./processor/rewrite-url');
 var streamFactory = require('./lib/stream');
 var readContents = require('./lib/read-contents');
@@ -59,17 +59,16 @@ module.exports.htmlparser = require('htmlparser2');
  * @return {stream.Duplex}
  */
 function createPipeline(options) {
-	var input = rewriteUrl(options);
-	var output = input;
+	var pipeline = [rewriteUrl(options)];
 
 	// use custom transformers, if provided
 	// each `transform` entry must be a function that returns a transform stream
 	if (options.transform) {
 		var t = Array.isArray(options.transform) ? options.transform : [options.transform];
 		t.forEach(function(streamFactory) {
-			output = output.pipe(streamFactory(options));
+			pipeline.push(streamFactory(options));
 		});
 	}
 
-	return duplexer(input, output);
+	return combine(pipeline);
 }
