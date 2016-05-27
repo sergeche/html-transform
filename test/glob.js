@@ -3,7 +3,6 @@ var path = require('path');
 var assert = require('assert');
 var del = require('del');
 var vfs = require('vinyl-fs');
-var extend = require('xtend');
 var transform = require('../');
 
 function read(p) {
@@ -11,8 +10,8 @@ function read(p) {
 }
 
 function src(pattern, options) {
-	return vfs.src(pattern, extend({
-		cwd: __dirname, 
+	return vfs.src(pattern, Object.assign({
+		cwd: __dirname,
 		base: __dirname,
 	}, options || {}));
 }
@@ -29,7 +28,7 @@ describe('Glob', function() {
 	it('stream content', function(done) {
 		src('./html/{urls,urls-preserve}.html', {buffer: false})
 		.pipe(transform({
-			prefix: '/a/b/c', 
+			prefix: '/a/b/c',
 			mode: 'xhtml'
 		}))
 		.pipe(dest('out-stream'))
@@ -43,7 +42,7 @@ describe('Glob', function() {
 	it('buffer content', function(done) {
 		src('./html/{urls,urls-preserve}.html')
 		.pipe(transform({
-			prefix: '/a/b/c', 
+			prefix: '/a/b/c',
 			mode: 'xhtml'
 		}))
 		.pipe(dest('out'))
