@@ -3,7 +3,7 @@ var path = require('path');
 var assert = require('assert');
 var del = require('del');
 var vfs = require('vinyl-fs');
-var transform = require('../');
+var transform = require('../').stream;
 
 function read(p) {
 	return fs.readFileSync(path.join(__dirname, p), 'utf8');
