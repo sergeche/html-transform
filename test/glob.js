@@ -30,7 +30,7 @@ describe('Glob', function() {
 		.pipe(transform({
 			prefix: '/a/b/c',
 			mode: 'xhtml'
-		}))
+		})).on('error', done)
 		.pipe(dest('out-stream'))
 		.on('end', function() {
 			assert.equal(read('out-stream/html/urls.html'), read('fixtures/urls1.html'));
@@ -44,7 +44,7 @@ describe('Glob', function() {
 		.pipe(transform({
 			prefix: '/a/b/c',
 			mode: 'xhtml'
-		}))
+		})).on('error', done)
 		.pipe(dest('out'))
 		.on('end', function() {
 			assert.equal(read('out/html/urls.html'), read('fixtures/urls1.html'));

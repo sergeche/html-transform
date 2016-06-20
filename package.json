@@ -4,7 +4,7 @@
   "description": "Transforms given HTML files at DOM level",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec"
+    "test": "mocha --reporter spec"
   },
   "author": "Sergey Chikuyonok <serge.che@gmail.com>",
   "license": "ISC",
@@ -13,6 +13,7 @@
     "domelementtype": "^1.3.0",
     "domhandler": "^2.3.0",
     "entities": "^1.1.1",
+    "file-stats": "github:sergeche/file-stats#v1.0.0",
     "htmlparser2": "^3.9.0"
   },
   "devDependencies": {
