@@ -21,9 +21,7 @@ function dest(dir) {
 }
 
 describe('Glob', function() {
-	before(function(done) {
-		del(['./out-stream', './out'], {cwd: __dirname}, done);
-	});
+	before(() => del(['./out-stream', './out'], { cwd: __dirname }));
 
 	it('stream content', function(done) {
 		src('./html/{urls,urls-preserve}.html', {buffer: false})

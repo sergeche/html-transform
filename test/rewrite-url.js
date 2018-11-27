@@ -18,9 +18,7 @@ function dest(dir) {
 }
 
 describe('URL rewriter', function() {
-	before(function(done) {
-		del('./out', {cwd: __dirname}, done);
-	});
+	before(() => del('./out', { cwd: __dirname }));
 
 	it('transform URLs', function(done) {
 		src('./html/urls.html')
